@@ -1,0 +1,387 @@
+﻿@model RiskLogic.Model.ClientBriefingTemplate.BriefingAdminTemplateSaveModel
+@{
+    ViewBag.Title = "Add" + Model.TemplateType.Name + "Template";
+    Layout = "~/Views/Shared/_LayoutClient.cshtml";
+}
+
+@{var jsVersion = RiskLogic.Common.Helpers.WebConfigurationHelper.GetAppSettingValue("JSVersion");
+    var cssVersion = RiskLogic.Common.Helpers.WebConfigurationHelper.GetAppSettingValue("CSSVersion");}
+@Scripts.Render("~/bundles/jquery-old")
+@Scripts.Render("~/bundles/jquery-ui")
+@Styles.Render("~/Content/themes/base/css-jquery-ui")
+<link href="~/Content/themes/base/font-icons/font-awesome/css/font-awesome.min.css" rel="stylesheet" />
+<script src="@Url.Content("~/Scripts/BriefingTemplate.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/global_dialog.js?v=" + jsVersion)" type="text/javascript"></script>
+
+<script src="@Url.Content("~/Scripts/dropzone/dropzone.min.js")" type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" href="~/Scripts/dropzone/dropzone.min.css">
+
+<style type="text/css">
+    .dropzone {
+        border-style: dashed;
+        border-color: gray;
+        padding-bottom: 0px;
+    }
+
+        .dropzone .dz-preview {
+            margin: 8px;
+        }
+
+            .dropzone .dz-preview .dz-error-message {
+                top: 70px;
+            }
+
+    .tooltip_table tr:last-child td {
+        padding-bottom: 10px !important;
+    }
+</style>
+
+<script>
+    var isAddBriefing = false;
+    var attachmentList = @Html.Raw(Json.Encode(Model.AttachmentsList)); //returned from DB
+</script>
+
+@using (Html.BeginForm("SaveBriefingTemplate", "ClientBriefingTemplate", FormMethod.Post, new { id = "SaveClientBriefingTemplate" }))
+{
+    @Html.Hidden("SelectedTemplateTypeId", Model.TemplateType.BriefTemplateTypeId, new { id = "SelectedTemplateTypeId" })
+    @Html.Hidden("BriefMasterTemplateId", Model.BriefMasterTemplateId, new { id = "BriefMasterTemplateId" })
+    @Html.Hidden("ContactListId", Model.ContactList == null ? string.Empty : Model.ContactList.BriefMasterDefinedEmailId.ToString(), new { id = "ContactListId" })
+    @Html.Hidden("TemplateSectionsRemoved", Model.TemplateSectionsRemoved == null ? string.Empty : Model.TemplateSectionsRemoved.ToString(), new { id = "TemplateSectionsRemoved" })
+    @Html.Hidden("BriefingTemplateAttachment", Model.BriefingTemplateAttachment, new { id = "BriefingTemplateAttachment" }) 
+    @Html.Hidden("TemplateAttachmentsRemoved", Model.TemplateAttachmentsRemoved == null ? string.Empty : Model.TemplateAttachmentsRemoved.ToString(), new { id = "TemplateAttachmentsRemoved" })
+    @Html.AntiForgeryToken()
+    <div>
+        <div class="col-sm-3">
+        </div>
+
+        <div class="col-sm-9">
+            <h2 class="heading_text">
+                <span> Edit @Model.TemplateType.Name Template </span>
+            </h2>
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-warning" role="alert"> @ViewBag.ErrorMessage</div>
+            }
+
+            <div class="clearfix"></div>
+
+            <div class="col-sm-12">
+
+            </div>
+
+            <div class="clearfix"></div>
+
+            <div class="col-sm-12">
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="col-sm-2" style="padding-bottom:0.5em">Created By:</div>
+                        <div class="col-sm-10" style="padding-bottom:0.5em">@Model.CreatedBy</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="col-sm-2" style="padding-bottom:0.5em">Date:</div>
+                        <div class="col-sm-10" style="padding-bottom:0.5em">@Model.CreatedDateFormatted</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="col-sm-2" style="padding-bottom:0.5em">Time:</div>
+                        <div class="col-sm-10" style="padding-bottom:0.5em">@Model.CreatedTimeFormatted</div>
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div style="padding-bottom:0.5em" class="heading_text_response">Set a Criticality:</div>
+                        <div>
+                            @Html.DropDownListFor(x => x.SelectedCriticalStatusId, Model.CriticalStatus, "Please select criticality...", new { @class = "form-control" })
+                            @Html.ValidationMessageFor(x => x.CriticalStatus, String.Empty, new { @class = "colorred" })
+                        </div>
+                    </div>
+                    <div class="col-sm-9">
+                        <div style="padding-bottom:0.5em">Template Name:</div>
+                        <div>
+                            @Html.TextBoxFor(x => x.TemplateName, new { @class = "form-control white_msg", placeholder = "Enter Template Name", })
+                            @Html.ValidationMessageFor(x => x.TemplateName, String.Empty, new { @class = "colorred" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div style="padding-bottom:0.5em">@Model.TemplateType.Name Title:</div>
+                        <div>
+                            @Html.TextBoxFor(x => x.TemplateTitle, new { placeholder = "Enter Template Title", @class = "form-control", maxlength = 60 })
+                            @Html.ValidationMessageFor(x => x.TemplateTitle, String.Empty, new { @class = "colorred" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+                <div id="contentDiv">
+
+                    @if (Model.TemplateSections == null || Model.TemplateSections.Count == 0)
+                    {
+                        <script>
+                            $(document).ready(function () {
+
+                                var $fields = $('#contentDiv');
+                                var rowCount = $('.dynamicRow').length - 1;
+                                var i = rowCount + 1;
+                                //$('<div class="row"><div class="col-sm-12"><div class="dynamicRow"><input type="text" id="TemplateSections_' + i + '_Heading" name="TemplateSections[' + i + '].Heading" class="form-control" placeholder="New Section Heading:" /></div><div><textarea name="TemplateSections[' + i + '].Body" id="TemplateSections_' + i + '_Body" rows="5" class="form-control" placeholder="Enter your description."></textarea></div></div></div>').appendTo($fields);
+                                $('<div class="row"><div class="col-sm-11"><div class="dynamicRow"><input type="text" id="TemplateSections_' + i + '_Heading" name="TemplateSections[' + i + '].Heading" class="form-control" placeholder="New Section Heading:" /></div></div><div class="col-sm-1"><div class=""><div class="round-button"><div class="round-button-circle"><a title="Delete" onclick="DeleteSection(this);" class="round-button DeleteSection">X</a></div></div></div></div><div class="col-sm-12"><div class=""><textarea name="TemplateSections[' + i + '].Body" id="TemplateSections_' + i + '_Body" rows="5" class="form-control" placeholder="Enter your description."></textarea></div></div><div class="col-sm-12 clearfix"><h2></h2></div></div>').appendTo($fields);
+                            });
+                        </script>
+                    }
+
+                    @{ int rowNo = 0; }
+                    @foreach (var item in Model.TemplateSections)
+                    {
+                        <div class="row">
+                            <div class="col-sm-11">
+                                <div class="dynamicRow">
+                                    <input id='TemplateSections_@(rowNo)_BriefMasterTemplateSectionId' type='hidden' value='@item.BriefMasterTemplateSectionId' name='TemplateSections[@(rowNo)].BriefMasterTemplateSectionId' />
+                                    <input type="text" id="TemplateSections_@(rowNo)_Heading" name="TemplateSections[@(rowNo)].Heading" class="form-control" placeholder="New Section Heading:" value="@item.Heading" />
+                                </div>
+                            </div>
+                            <div class="col-sm-1">
+                                <div class="">
+                                    <div class="round-button"><div class="round-button-circle"><a id="@item.BriefMasterTemplateSectionId" title="Delete" class="round-button DeleteSection">X</a></div></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-12">
+                                <div>
+                                    <textarea id="TemplateSections_@(rowNo)_Body" name="TemplateSections[@(rowNo)].Body" rows="5" class="form-control" placeholder="Enter your description.">@item.Body</textarea>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <div class="clearfix"><h2></h2></div>
+                        rowNo++;
+                    }
+
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <a class="btn btn_large btn-black pull-right m_btm15" data-dismiss="modal" id="btnAddSection">Add Section <i><img src=@Url.Content("~/images/plus-small.png") alt=""></i></a>
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div style="padding-bottom:0.5em">Add Attachment:</div>
+                        @*<div style="border:1px solid #dcdcdc; border-radius:4px; background: #f5f5f5 !important">
+                            <div>
+                                <label class="custom-file-upload">
+                                    <input type="file" name="uploadAttachment" id="uploadAttachment" /><i class="glyphicon glyphicon-download-alt" data-toggle="tooltip" data-placement="bottom" title=""></i> Upload
+                                </label>
+                            </div>
+                            <div style="margin:7px;">
+                                @if (true)
+                                {
+                                    <div>
+                                        doc1.jpg
+                                    </div>
+                                    <div>
+                                        doc1.jpg
+                                    </div>
+                                    <div>
+                                        doc1.jpg
+                                    </div>
+                                    <div>
+                                        doc1.jpg
+                                    </div>
+                                }
+                                else
+                                {
+
+                                }
+                            </div>
+                        </div>*@
+
+
+                        <div style="border:1px solid #dcdcdc; border-radius:4px; background: #f5f5f5 !important">
+
+                            <span class="col-sm-2 pull-right padding_right0 margin_top15">
+                                <a class="btn btn_large btn-black pull-right m_btm15" href="javascript:void(0);" id="addNewEvacReportDoc">Add<i><img alt="" src="~/images/plus-small.png"></i></a>
+                                @*<input class="custom-file-upload" type="button" id="addNewEvacReportDoc" /><i class="glyphicon glyphicon-download-alt" data-toggle="tooltip" data-placement="bottom" title=""></i> Upload*@
+                            </span>
+                            <div class="col-sm-12 clearfix"><h2></h2></div>
+                            <div class="form-group">
+                                <div class="tooltip_table padding_btm5">
+                                    <table width="100%" class="table table-bordered table-striped margin_zero fixed" id="tblDynamicRowsUploadFiles">
+                                        <thead>
+                                            <tr>
+                                                <th width="220px" style="text-align:center">Name</th>
+                                                <th style="text-align:center">File(s)</th>
+                                                <th width="100px" style="text-align:center">Remove</th>
+                                            </tr>
+                                        </thead>
+
+                                    </table>
+                                </div>
+
+                                <span id="uploadFileErrorMessage" style="display:none;" class="colorred">A Template attachment is required</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div style="padding-bottom:0.5em">Send to the following recipients:</div>
+                        <div>
+                            <textarea id="ContactEmailList" name="ContactEmailList" rows="5" class="form-control" placeholder="Please enter recipient email addresses seperated by a comma.">
+                                @if (Model.ContactList != null)
+                                { @Model.ContactList.EmailList;
+                                }
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"><h2></h2></div>
+
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div>
+                            <a class="btn btn_large btn-red pull-right m_btm15" data-dismiss="modal" id="btnCancel" href="@Url.Action("Index", "ClientBriefingTemplate")">Cancel</a>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <div>
+                            <a class="btn btn_large btn-black pull-right m_btm15 confirmDelete" data-dismiss="modal" id="btnDelete" href="@Url.Action("DeleteBriefingTemplate", "ClientBriefingTemplate", new { bId = Model.BriefMasterTemplateId})">Delete</a>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <div>
+                            @*<a class="btn btn_large btn-black pull-right m_btm15" data-dismiss="modal" id="btnSave" href="@Url.Action("AddBriefingTemplate", "ClientBriefingTemplate")">Save <i><img src=@Url.Content("~/images/plus-small.png") alt=""></i></a>*@
+                            <input type="submit" class="btn btn_large btn-black pull-right m_btm15" id="btnSave" value="Save" />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="clearfix"></div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            var $fields = $('#contentDiv');
+            $('#btnAddSection').click(function (e) {
+                e.preventDefault();
+                var rowCount = $('.dynamicRow').length - 1;
+                var i = rowCount + 1;
+                //$('<div class="clearfix"><h2></h2></div><div class="row"><div class="col-sm-12"><div class="dynamicRow"><input type="text" id="TemplateSections_' + i + '_Heading" name="TemplateSections[' + i + '].Heading" class="form-control" placeholder="New Section Heading:" /></div><div><textarea name="TemplateSections[' + i + '].Body" id="TemplateSections_' + i + '_Body" rows="5" class="form-control" placeholder="Enter your description."></textarea></div></div></div>').appendTo($fields);
+                $('<div class="row"><div class="col-sm-11"><div class="dynamicRow"><input type="text" id="TemplateSections_' + i + '_Heading" name="TemplateSections[' + i + '].Heading" class="form-control" placeholder="New Section Heading:" /></div></div><div class="col-sm-1"><div class=""><div class="round-button"><div class="round-button-circle"><a title="Delete" onclick="DeleteSection(this);" class="round-button DeleteSection">X</a></div></div></div></div><div class="col-sm-12"><div class=""><textarea name="TemplateSections[' + i + '].Body" id="TemplateSections_' + i + '_Body" rows="5" class="form-control" placeholder="Enter your description."></textarea></div></div><div class="col-sm-12 clearfix"><h2></h2></div></div>').appendTo($fields);
+            });
+
+            $('.DeleteSection').click(function () {
+
+                var sId = $(this).attr('id');
+
+                if (sId != '') {
+                    $(this).closest('.row').remove();
+
+                    var removedItems = $('#TemplateSectionsRemoved').val();
+                    if (removedItems != '') {
+                        removedItems += ',' + sId;
+                    }
+                    else {
+                        removedItems = sId;
+                    }
+
+                    $('#TemplateSectionsRemoved').val(removedItems);
+                }
+                else {
+                    alert('Invalid Delete attempt.');
+                }
+
+            });
+        });
+
+        function DeleteSection(e)
+        { $(e).closest('.row').remove(); }
+
+    </script>
+
+
+    <div id="dialog-delete" style="display:none">
+        <div class="modal-dialog small_model">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h4 class="modal-title">Confirmation</h4>
+                </div>
+
+                <div class="modal-body notification-title">
+                    <h4>Do you want to delete?</h4>
+
+                    <div class="clearfix"></div>
+                </div>
+
+                <div class="modal-footer text-center">
+                    <button type="button" id="ConfirmationNo" class="col-sm-3 delete_icon" data-dismiss="modal"> <img src="~/Images/cross.png"></button>
+                    <button type="button" id="ConfirmationYes" class="col-sm-3 delete_icon" data-dismiss="modal"> <img src="~/Images/tick.png"></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(".confirmDelete").live("click", function (e) {
+            url = $(this).attr('href');
+            $("#dialog-delete").dialog('open');
+            $("#ConfirmationYes").live("click", function (e) {
+                $("#dialog-delete").dialog("close");
+                window.location.href = url;
+            });
+            $("#ConfirmationNo").live("click", function (e) {
+                $("#dialog-delete").dialog("close");
+            });
+            return false;
+        });
+
+        $("#dialog-delete").dialog({
+            autoOpen: false,
+            resizable: false,
+            height: 560,
+            width: 460,
+            show: { effect: 'drop', direction: "up" },
+            modal: true,
+            draggable: true,
+            open: function (event, ui) {
+                $(".ui-dialog-titlebar").hide();
+                $(".ui-dialog-titlebar-close").hide();
+            }
+        });
+    </script>
+
+
+                        }
